@@ -8,6 +8,7 @@ from google.genai import types
 def main():
     argument_parser = argparse.ArgumentParser(description='Code Agent')
     argument_parser.add_argument('prompt', type=str, help='<prompt>')
+    argument_parser.add_argument('--verbose', action='store_true', help='enable verbose output')
     arguments = argument_parser.parse_args()
 
     load_dotenv()
@@ -24,9 +25,11 @@ def main():
     if response.usage_metadata == None:
         raise RuntimeError('error contacting Gemini API')
 
-    print(f'prompt: {arguments.prompt}')
-    print(f'Prompt tokens: {response.usage_metadata.prompt_token_count}')
-    print(f'Response tokens: {response.usage_metadata.candidates_token_count}')
+    if arguments.verbose:
+        print(f'User prompt: {arguments.prompt}')
+        print(f'Prompt tokens: {response.usage_metadata.prompt_token_count}')
+        print(f'Response tokens: {response.usage_metadata.candidates_token_count}')
+    
     print(f'Response:')
     print(response.text)
 
