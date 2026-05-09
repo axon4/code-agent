@@ -3,6 +3,7 @@ import os
 from google import genai
 import argparse
 from google.genai import types
+from prompts import system_prompt
 
 
 def main():
@@ -19,8 +20,13 @@ def main():
 
     client = genai.Client(api_key=api_key)
     messages = [types.Content(role='user', parts=[types.Part(text=arguments.prompt)])]
+    temperature = None
 
-    response = client.models.generate_content(model='gemini-2.5-flash', contents=messages)
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt, temperature=temperature)
+    )
 
     if response.usage_metadata is None:
         raise RuntimeError('error contacting Gemini API')
