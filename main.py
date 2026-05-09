@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 from google import genai
 import argparse
+from google.genai import types
 
 
 def main():
@@ -16,8 +17,9 @@ def main():
         raise RuntimeError('error finding Gemini API Key')
 
     client = genai.Client(api_key=api_key)
+    messages = [types.Content(role='user', parts=[types.Part(text=arguments.prompt)])]
 
-    response = client.models.generate_content(model='gemini-2.5-flash', contents=arguments.prompt)
+    response = client.models.generate_content(model='gemini-2.5-flash', contents=messages)
 
     if response.usage_metadata == None:
         raise RuntimeError('error contacting Gemini API')
