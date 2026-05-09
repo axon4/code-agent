@@ -1,5 +1,6 @@
 import os
 from configuration import MAX_CHARS
+from google.genai import types
 
 
 def get_file_content(working_directory, file_path):
@@ -23,3 +24,19 @@ def get_file_content(working_directory, file_path):
             return content
     except:
         return f'Error: failed to get file content'
+
+    
+schema_get_file_content = types.FunctionDeclaration(
+    name='get_file_content',
+    description='retrieves the content of a specified file at the given path',
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        required=['file_path'],
+        properties={
+            'file_path': types.Schema(
+                type=types.Type.STRING,
+                description='path to the target file'
+            )
+        }
+    )
+)

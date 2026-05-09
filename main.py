@@ -4,6 +4,7 @@ from google import genai
 import argparse
 from google.genai import types
 from prompts import system_prompt
+from tools import available_functions
 
 
 def main():
@@ -14,6 +15,7 @@ def main():
 
     load_dotenv()
     api_key = os.environ.get('GEMINI_API_KEY')
+    model = os.environ.get('GEMINI_MODEL', 'gemini-3.1-flash-lite')
 
     if not api_key:
         raise RuntimeError('error finding Gemini API Key')
@@ -21,11 +23,15 @@ def main():
     client = genai.Client(api_key=api_key)
     messages = [types.Content(role='user', parts=[types.Part(text=arguments.prompt)])]
     temperature = None
-
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        # model='gemini-2.5-flash',
+        model=model,
         contents=messages,
-        config=types.GenerateContentConfig(system_instruction=system_prompt, temperature=temperature)
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            temperature=temperature,
+            tools=[available_functions]
+        )
     )
 
     if response.usage_metadata is None:
@@ -36,8 +42,12 @@ def main():
         print(f'Prompt tokens: {response.usage_metadata.prompt_token_count}')
         print(f'Response tokens: {response.usage_metadata.candidates_token_count}')
     
-    print(f'Response:')
-    print(response.text)
+    if response.function_calls is not None:
+        for call in response.function_calls:
+            print(f'Calling function: {call.name}({call.args})')
+    else:
+        print(f'Response:')
+        print(response.text)
 
 
 if __name__ == '__main__':
