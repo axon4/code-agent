@@ -5,6 +5,8 @@ import argparse
 from google.genai import types
 from prompts import system_prompt
 from tools import available_functions, call_function
+from configuration import MAX_AGENT_LOOP_ITERATIONS
+import sys
 
 
 def main():
@@ -25,15 +27,26 @@ def main():
     if arguments.verbose:
         print(f'User prompt: {arguments.prompt}')
 
-    generate_content(client, messages, arguments.verbose)
+    for _ in range(MAX_AGENT_LOOP_ITERATIONS):
+        try:
+            response = generate_content(client, messages, arguments.verbose)
+
+            if response:
+                print('response:')
+                print(response)
+
+                return
+        except Exception as error:
+            print(f'error generating content: {error}')
+
+    print(f'maximum agent-loop iterations ({MAX_AGENT_LOOP_ITERATIONS}) reached')
+    sys.exit(1)
 
 
 def generate_content(client, messages, verbose):
-    model = os.environ.get('GEMINI_MODEL', 'gemini-3.1-flash-lite')
     temperature = None
     response = client.models.generate_content(
-        # model='gemini-2.5-flash',
-        model=model,
+        model='gemini-2.5-flash',
         contents=messages,
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
@@ -48,32 +61,31 @@ def generate_content(client, messages, verbose):
     if verbose:
         print(f'Prompt tokens: {response.usage_metadata.prompt_token_count}')
         print(f'Response tokens: {response.usage_metadata.candidates_token_count}')
-    
-    if response.function_calls is not None:
+
+    if not response.candidates:
+        raise RuntimeError('error: no candidates returned')
+
+    for candidate in response.candidates:
+        if candidate.content:
+            messages.append(candidate.content)
+
+    if response.function_calls:
+        function_results = []
+
         for function_call in response.function_calls:
             function_call_result = call_function(function_call)
 
-            if not function_call_result.parts:
-                raise Exception('error: no parts returned from function-call--result parts')
+            if not function_call_result.parts or not function_call_result.parts[0].function_response or not function_call_result.parts[0].function_response.response:
+                raise Exception('error: invalid function response')
             
-            response = function_call_result.parts[0].function_response
-
-            if response is None:
-                raise Exception('error: no 1st-level function-response')
-            
-            function_response = response.response
-
-            if function_response is None:
-                raise Exception('error: no 2nd-level function-response')
-            
-            function_results = []
             function_results.append(function_call_result.parts[0])
 
             if verbose:
                 print(f'-> {function_call_result.parts[0].function_response.response}')
+
+        messages.append(types.Content(role='user', parts=function_results))
     else:
-        print(f'Response:')
-        print(response.text)
+        return response.text
 
 
 if __name__ == '__main__':
