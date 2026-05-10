@@ -42,7 +42,7 @@ def run_python_file(working_directory, file_path, args=None):
 
 schema_run_python_file = types.FunctionDeclaration(
     name='run_python_file',
-    description='executes and runs a Python file at the specified path with optional arguments and returns the output. If the prompt contains instructions to run a Python file, use this function to execute the file and provide the output back to the user',
+    description='executes and runs a Python file at the specified path with optional arguments and returns the output. If the prompt contains instructions to run a Python file, use this function to execute the file and provide the output back to the user. If the command contains the word "run", you should probably use this function instead of `get_files_info`',
     parameters=types.Schema(
         type=types.Type.OBJECT,
         required=['file_path'],

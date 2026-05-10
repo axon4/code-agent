@@ -4,7 +4,7 @@ from google import genai
 import argparse
 from google.genai import types
 from prompts import system_prompt
-from tools import available_functions
+from tools import available_functions, call_function
 
 
 def main():
@@ -43,8 +43,28 @@ def main():
         print(f'Response tokens: {response.usage_metadata.candidates_token_count}')
     
     if response.function_calls is not None:
-        for call in response.function_calls:
-            print(f'Calling function: {call.name}({call.args})')
+        for function_call in response.function_calls:
+            function_call_result = call_function(function_call)
+
+            if not function_call_result.parts:
+                raise Exception('error: no parts returned from function-call--result parts')
+            
+            response = function_call_result.parts[0].function_response
+
+            if response is None:
+                raise Exception('error: no 1st-level function-response')
+            
+            function_response = response.response
+
+            if function_response is None:
+                raise Exception('error: no 2nd-level function-response')
+            
+            function_results = []
+            function_results.append(function_call_result.parts[0])
+
+            if arguments.verbose:
+                print(f'-> {function_call_result.parts[0].function_response.response}')
+
     else:
         print(f'Response:')
         print(response.text)
