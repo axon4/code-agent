@@ -3,6 +3,8 @@ from functions.get_files_info import schema_get_files_info, get_files_info
 from functions.get_file_content import schema_get_file_content, get_file_content
 from functions.write_file import schema_write_file, write_file
 from functions.run_python_file import schema_run_python_file, run_python_file
+import os
+from configuration import WORKING_DIRECTORY
 
 
 available_functions = types.Tool(
@@ -37,7 +39,7 @@ def call_function(function_call, verbose=False):
         )
     else:
         arguments = dict(function_call.args) if function_call.args else {}
-        arguments['working_directory'] = './calculator'
+        arguments['working_directory'] = os.environ.get('WORKING_DIRECTORY') or WORKING_DIRECTORY
         function_result = functions[function_name](**arguments)
 
         return types.Content(
