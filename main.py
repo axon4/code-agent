@@ -15,13 +15,21 @@ def main():
 
     load_dotenv()
     api_key = os.environ.get('GEMINI_API_KEY')
-    model = os.environ.get('GEMINI_MODEL', 'gemini-3.1-flash-lite')
 
     if not api_key:
         raise RuntimeError('error finding Gemini API Key')
 
     client = genai.Client(api_key=api_key)
     messages = [types.Content(role='user', parts=[types.Part(text=arguments.prompt)])]
+
+    if arguments.verbose:
+        print(f'User prompt: {arguments.prompt}')
+
+    generate_content(client, messages, arguments.verbose)
+
+
+def generate_content(client, messages, verbose):
+    model = os.environ.get('GEMINI_MODEL', 'gemini-3.1-flash-lite')
     temperature = None
     response = client.models.generate_content(
         # model='gemini-2.5-flash',
@@ -37,8 +45,7 @@ def main():
     if response.usage_metadata is None:
         raise RuntimeError('error contacting Gemini API')
 
-    if arguments.verbose:
-        print(f'User prompt: {arguments.prompt}')
+    if verbose:
         print(f'Prompt tokens: {response.usage_metadata.prompt_token_count}')
         print(f'Response tokens: {response.usage_metadata.candidates_token_count}')
     
@@ -62,9 +69,8 @@ def main():
             function_results = []
             function_results.append(function_call_result.parts[0])
 
-            if arguments.verbose:
+            if verbose:
                 print(f'-> {function_call_result.parts[0].function_response.response}')
-
     else:
         print(f'Response:')
         print(response.text)
